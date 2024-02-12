@@ -74,7 +74,6 @@ void reset_hash_map(HashMap hash_map, int list_size) {
         temp_list[i].next = NULL;
     }
     free_hash_map_iterator(&iterator);
-
     // 清除原有数据
     for(int i = 0;i < hash_map->list_size; ++i) {
         hash_map->list[i].key = NULL;
@@ -86,7 +85,6 @@ void reset_hash_map(HashMap hash_map, int list_size) {
             hash_map->list[i].next = temp;
         }
     }
-
     // 更改内存大小
     hash_map->list_size = list_size;
     Entry relist = (Entry)realloc(hash_map->list, hash_map->list_size * sizeof(struct entry));
@@ -101,6 +99,8 @@ void reset_hash_map(HashMap hash_map, int list_size) {
         hash_map->list[i].next = NULL;
     }
     // 转移数据,将原数据转移到新开辟的内存中
+    // 首先将size清零
+    hash_map->size = 0;
     for(int i = 0;i < length; ++i) {
         hash_map->put(hash_map, temp_list[i].key, temp_list[i].value);
     }
@@ -117,6 +117,7 @@ void default_put(HashMap hash_map, void* key, void* value) {
         // 注意：⚠️扩充考虑的是当前存储元素的数量和hash表的大小之间的关系，而不是
         // 存储空间是否已经存满。
         // 扩充存储空间，对原有键值对进行再次散列，会把冲突的数据再次分散开，加快索引定位速度。
+        printf("size : %d list size: %d\n", hash_map->size, hash_map->list_size);
         reset_hash_map(hash_map, hash_map->list_size * 2);
     }
     int index = hash_map->hash_code(hash_map, key);
@@ -124,22 +125,24 @@ void default_put(HashMap hash_map, void* key, void* value) {
         ++hash_map->size;
         hash_map->list[index].key = key;
         hash_map->list[index].value = value;
-        printf("%s %s\n", (char*) key, (char*) value);
     } else {
         Entry current_entry = &hash_map->list[index];
-        while(hash_map->list[index].next != NULL) {
+        Entry pre_entry = &hash_map->list[index];
+        while(current_entry != NULL) {
             // 如果冲突列表中存在则直接覆盖
             if(hash_map->equal(key, current_entry->key)) {
                 current_entry->value = value;
                 return ;
             }
+            pre_entry = current_entry;
             current_entry = current_entry->next;
         }
         // 这里是尾插法
-        current_entry->next = new_entry();
-        current_entry->next->key = key;
-        current_entry->next->value = value;
-        current_entry->next->next = NULL;
+        current_entry = new_entry();
+        current_entry->key = key;
+        current_entry->value = value;
+        current_entry->next = NULL;
+        pre_entry->next = current_entry;
         ++hash_map->size;
     }
 }
@@ -150,6 +153,7 @@ void* default_get(HashMap hash_map, void* key) {
     while(current_entry != NULL && !hash_map->equal(current_entry->key, key)) {
         current_entry = current_entry->next;
     }
+    if(current_entry == NULL)return NULL;
     return current_entry->value;
 }
 // 判断hash表中是否存在对应key
