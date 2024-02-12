@@ -108,6 +108,7 @@ void reset_hash_map(HashMap hash_map, int list_size) {
 }
 
 bool default_equal(void* key1, void* key2) {
+    if(key1 == NULL || key2 == NULL)return false;
     return strcmp((const char*) key1, (const char*) key2) ? false : true;
 }
 
@@ -150,9 +151,13 @@ void default_put(HashMap hash_map, void* key, void* value) {
 void* default_get(HashMap hash_map, void* key) {
     int index = hash_map->hash_code(hash_map, key);
     Entry current_entry = &hash_map->list[index];
+    // 这里需要注意当current_entry不为NULL时，current_entry->key可能为NULL
+    // 所以需要在equal中，判断比较的key是否为空，为空返回false
     while(current_entry != NULL && !hash_map->equal(current_entry->key, key)) {
         current_entry = current_entry->next;
     }
+    // 这里需要特别注意⚠️，不用判断key是否为NULL了因为处理完上面的情况后只会出现
+    // current_entry为NULL的情况
     if(current_entry == NULL)return NULL;
     return current_entry->value;
 }
@@ -160,10 +165,14 @@ void* default_get(HashMap hash_map, void* key) {
 bool default_exist(HashMap hash_map, void* key) {
     int index = hash_map->hash_code(hash_map, key);
     Entry current_entry = &hash_map->list[index];
+    // 这里需要注意当current_entry不为NULL时，current_entry->key可能为NULL
+    // 所以需要在equal中，判断比较的key是否为空，为空返回false
     while(current_entry != NULL && !hash_map->equal(current_entry->key, key)) {
         current_entry = current_entry->next;
     }
-    if(current_entry->key == NULL){
+    // 这里需要特别注意⚠️，不用判断key是否为NULL了因为处理完上面的情况后只会出现
+    // current_entry为NULL的情况
+    if(current_entry == NULL){
         return false;
     }
     return true;
@@ -194,28 +203,30 @@ bool default_remove(HashMap hash_map, void* key) {
                 current_entry->next = NULL;
                 result = true;
             }
-        }
-        // 保留一个前节点，直接赋值就可以->next->next是否为NULL并不影响使用
-        while(current_entry->next != NULL) {
-            if(hash_map->equal(current_entry->next->key, key)) {
-                --hash_map->size;
-                Entry next2_entry = current_entry->next->next;
-                free(current_entry->next);
-                current_entry->next = next2_entry;
-                result = true;
+        } else {
+            // 保留一个前节点，直接赋值就可以->next->next是否为NULL并不影响使用
+            while(current_entry->next != NULL) {
+                if(hash_map->equal(current_entry->next->key, key)) {
+                    --hash_map->size;
+                    Entry next2_entry = current_entry->next->next;
+                    free(current_entry->next);
+                    current_entry->next = next2_entry;
+                    result = true;
+                    break;
+                }
+                current_entry = current_entry->next;
             }
-            current_entry = current_entry->next;
         }
     }
     // 最后一定记得自动分配内存的事情
     // 如果小于一半就释放一半的内存
     if(hash_map->auto_assign && hash_map->size < hash_map->list_size/2) {
-        reset_hash_map(hash_map, hash_map->list_size/2);
+        reset_hash_map(hash_map, hash_map->list_size / 2);
     }
     return result;
 }
 
-void default_clear(HashMap hash_map) {
+void default_free(HashMap hash_map) {
     for(int i = 0;i < hash_map->list_size; ++i) {
         Entry entry = &hash_map->list[i];
         if(entry != NULL) {
@@ -230,7 +241,7 @@ void default_clear(HashMap hash_map) {
     }
     free(hash_map->list);
     hash_map->list = NULL;
-    hash_map->size = -1;
+    hash_map->size = 0;
     hash_map->list_size = 0;
 }
 
@@ -244,7 +255,7 @@ HashMap create_hash_map(HashCode hash_code, Equal equal) {
     hash_map->put = default_put;
     hash_map->get = default_get;
     hash_map->remove = default_remove;
-    hash_map->clear = default_clear;
+    hash_map->free = default_free;
     hash_map->exist = default_exist;
     hash_map->auto_assign = true;
     // 为list分配空间

@@ -24,7 +24,7 @@ typedef void*(*Get)(HashMap hash_map, void* key);
 
 typedef bool(*Remove)(HashMap hash_map, void* key);
 
-typedef void(*Clear)(HashMap hash_map);
+typedef void(*Free)(HashMap hash_map);
 
 typedef bool(*Exists)(HashMap hash_map, void* key);
 
@@ -37,7 +37,7 @@ typedef struct hashMap {
     Put put;                        // 添加键的函数
     Get get;                        // 获取键对应函数
     Remove remove;                  // 删除键函数
-    Clear clear;                    // 清空hash表
+    Free free;                    // 清空hash表
     Exists exist;                    // 判断键是否存在
     bool auto_assign;               // 设定是否根据当前数量动态调整内存大小，默认情况下开启
 }* HashMap;
@@ -52,7 +52,7 @@ static void* default_get(HashMap hash_map, void* key);
 
 static bool default_remove(HashMap hash_map, void* key);
 
-static void default_clear(HashMap hash_map);
+static void default_free(HashMap hash_map);
 
 static bool default_exist(HashMap hash_map, void* key);
 
