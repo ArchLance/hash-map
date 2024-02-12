@@ -42,10 +42,10 @@ bool put_get_test() {
     assert(size == hash_map->size);
     char* value6 = hash_map->get(hash_map, "jj");
     assert(strcmp(value6, "jjjj") == 0);
-
+    // 不存在且该index位置没有放入元素
     char* value7 = hash_map->get(hash_map, "1fdsf");
     assert(value7 == NULL);
-
+    // 测试迭代器
     HashMapIterator iterator = create_hash_map_iterator(hash_map);
     while (has_next_hash_map_iterator(iterator)) {
         iterator = next_hash_map_iterator(iterator);
@@ -98,13 +98,15 @@ bool remove_exist_test() {
     assert(value3 == NULL);
     hash_map->remove(hash_map, "hh");
     assert(list_size == hash_map->list_size * 2);
+
+    // exist测试
     bool exist1 = hash_map->exist(hash_map, "1fdsf");
     bool exist2 = hash_map->exist(hash_map, "aa");
     bool exist3 = hash_map->exist(hash_map, "ii");
     assert(exist1 == false);
     assert(exist2 == true);
     assert(exist3 == false);
-
+    // iterator测试
     HashMapIterator iterator = create_hash_map_iterator(hash_map);
     while (has_next_hash_map_iterator(iterator)) {
         iterator = next_hash_map_iterator(iterator);
